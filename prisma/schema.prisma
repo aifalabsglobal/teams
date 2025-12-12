@@ -1,0 +1,87 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Board {
+  id        String   @id @default(cuid())
+  title     String
+  content   Json?
+  pages     Page[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    String
+  workspaceId String?
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  topicId   String?
+  topic     Topic?   @relation(fields: [topicId], references: [id])
+  labels    Label[] 
+}
+
+model Page {
+  id        String   @id @default(cuid())
+  title     String   @default("Page 1")
+  content   Json?
+  order     Int      @default(0)
+  boardId   String
+  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Workspace {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  ownerId   String
+  members   WorkspaceMember[]
+  boards    Board[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  topics    Topic[]
+}
+
+model WorkspaceMember {
+  id          String        @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        WorkspaceRole @default(MEMBER)
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt   DateTime      @default(now())
+
+  @@unique([workspaceId, userId])
+}
+
+model Label {
+  id        String   @id @default(cuid())
+  name      String
+  color     String
+  boardId   String
+  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Topic {
+  id          String   @id @default(cuid())
+  name        String
+  workspaceId String
+  boards      Board[] 
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
